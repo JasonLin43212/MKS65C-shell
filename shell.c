@@ -55,8 +55,18 @@ char ** parse_args(char * line){
 }
 
 int execute_args(char ** args){
-  execvp(args[0],args);
-  return 0;
+  int child_pid = fork();
+  check_error();
+
+  //Parent
+  if (child_pid){
+    int status = 0;
+    wait(&status);
+  }
+  else {
+    execvp(args[0],args);
+  }
+  return 1;
 }
 
 void run_bash(){
