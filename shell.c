@@ -54,6 +54,11 @@ char ** parse_args(char * line){
   return output;
 }
 
+int execute_args(char ** args){
+  execvp(args[0],args);
+  return 0;
+}
+
 void run_bash(){
   char * input;
   char ** args;
