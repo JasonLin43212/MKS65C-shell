@@ -19,8 +19,8 @@ char * read_input(){
   int max_input_size = 2048;
   int cur_index = 0;
   char * input = malloc(max_input_size*sizeof(char));
+
   int cur_char;
-  check_error();
 
   while(1){
     cur_char = getchar();
@@ -56,15 +56,22 @@ char ** parse_args(char * line){
 
 int execute_args(char ** args){
   int child_pid = fork();
-  check_error();
+  if (child_pid == -1){
+    printf("Failed to fork child.\n");
+    exit(1);
+  }
 
   //Parent
   if (child_pid){
     int status = 0;
     wait(&status);
   }
+  //Command
   else {
     execvp(args[0],args);
+    if (errno == 2) {
+      printf("Cannot find command: %s\n",args[0]);
+    }
   }
   return 1;
 }
@@ -77,8 +84,15 @@ void run_bash(){
   while(status){
     printf("$ ");
     input = read_input();
-    args = parse_args(input);
-    status = execute_args(args);
+    char * cur_input = input;
+    strsep(&input,";");
+    while (cur_input){
+      printf("Your input now is cur:%s or input:%s\n",cur_input,input);
+      args = parse_args(cur_input);
+      status = execute_args(args);
+      cur_input = input;
+      strsep(&input,";");
+    }
   }
 }
 
