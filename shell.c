@@ -34,17 +34,36 @@ char * read_input(){
     cur_index++;
     if (cur_index >= max_input_size){
       input = realloc(input,2*max_input_size);
+      check_error();
     }
   }
 }
 
+char ** parse_args(char * line){
+   char ** output = malloc(10*sizeof(char *));
+  int num_args = 0;
+  char * old = NULL;
+
+  while(line){
+    old = line;
+    strsep(&line," ");
+    output[num_args] = old;
+    num_args++;
+  }
+
+  return output;
+}
+
 void run_bash(){
   char * input;
+  char ** args;
+  int status = 1;
 
-  while(1){
+  while(status){
     printf("$ ");
     input = read_input();
-    printf("This is input: %s\n",input);
+    args = parse_args(input);
+    status = execute_args(args);
   }
 }
 
