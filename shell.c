@@ -7,6 +7,9 @@
 #include <string.h>
 #include <fcntl.h>
 #include <time.h>
+#include <pwd.h>
+
+#include "shell.h"
 
 void check_error() {
   if (errno) {
@@ -15,13 +18,14 @@ void check_error() {
   }
 }
 
+//for testing
 void print_list(char ** list){
   printf("[");
   while(*list){
     printf("%s,",*list);
     list++;
   }
-  printf("]\n");
+  printf("\b]\n");
 }
 
 char * read_input(){
@@ -96,16 +100,19 @@ int main(){
   char * input;
   char ** args;
   int status = 1;
+  char * username = getpwuid(getuid())->pw_name;
+  char host_name[64];
+  gethostname(host_name,64);
 
   while(status){
-    printf("$ ");
+    printf("%s@%s: $ ",username,host_name);
     input = read_input();
     char * cur_input = input;
     strsep(&input,";");
     while (cur_input){
-      printf("Your input now is cur:%s or input:%s\n",cur_input,input);
+      //printf("Your input now is cur:%s or input:%s\n",cur_input,input);
       args = parse_args(cur_input);
-      print_list(args);
+      //print_list(args);
       status = execute_args(args);
       cur_input = input;
       strsep(&input,";");
