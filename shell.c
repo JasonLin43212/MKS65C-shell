@@ -15,6 +15,15 @@ void check_error() {
   }
 }
 
+void print_list(char ** list){
+  printf("[");
+  while(*list){
+    printf("%s,",*list);
+    list++;
+  }
+  printf("]\n");
+}
+
 char * read_input(){
   int max_input_size = 2048;
   int cur_index = 0;
@@ -40,15 +49,21 @@ char * read_input(){
 }
 
 char ** parse_args(char * line){
-   char ** output = malloc(10*sizeof(char *));
+  //Remove whitespace in front of input
+  while(*line == ' ' || *line == '\t'){
+    line++;
+  }
+  char ** output = malloc(10*sizeof(char *));
   int num_args = 0;
   char * old = NULL;
 
   while(line){
     old = line;
     strsep(&line," ");
-    output[num_args] = old;
-    num_args++;
+    if (*old != '\0'){
+      output[num_args] = old;
+      num_args++;
+    }
   }
 
   return output;
@@ -76,7 +91,8 @@ int execute_args(char ** args){
   return 1;
 }
 
-void run_bash(){
+
+int main(){
   char * input;
   char ** args;
   int status = 1;
@@ -89,16 +105,11 @@ void run_bash(){
     while (cur_input){
       printf("Your input now is cur:%s or input:%s\n",cur_input,input);
       args = parse_args(cur_input);
+      print_list(args);
       status = execute_args(args);
       cur_input = input;
       strsep(&input,";");
     }
   }
-}
-
-int main(){
-
-  run_bash();
-
   return 0;
 }
