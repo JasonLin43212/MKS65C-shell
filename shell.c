@@ -96,6 +96,24 @@ int execute_args(char ** args){
   return 1;
 }
 
+void change_directory_display(char output[]){
+  char path[4096] = "";
+  if (getcwd(path,4096) == NULL){
+    printf("Cannot get current working directory.\n");
+    exit(1);
+  }
+
+  char * username = getpwuid(getuid())->pw_name;
+  char home[4096] = "/home/";
+  strcat(home,username);
+  if (strstr(path,home)){
+    strcpy(output,"~");
+    strcat(output,path+strlen(home));
+  }
+  else{
+    strcpy(output,path);
+  }
+}
 
 int main(){
   char * input;
@@ -104,24 +122,12 @@ int main(){
   char * username = getpwuid(getuid())->pw_name;
   char host_name[64];
   gethostname(host_name,64);
-  char current_path[4096];
-  if (getcwd(current_path,4096) == NULL){
-    printf("Cannot get current working directory.\n");
-    exit(1);
-  }
-  char temp_file[4096] = "";
-  char current_file[4097] = "~";
-  int i;
-  for (i=0; i<(int)strlen(current_path); i++){
-    if (*(current_path+i) == '/'){
-      strcpy(temp_file,current_path + i);
-    }
-  }
-  strcat(current_file,temp_file);
 
+  char current_directory[4097] = "";
+  change_directory_display(current_directory);
 
   while(status){
-    printf("%s@%s:%s$ ",username,host_name,current_file);
+    printf("%s@%s:%s$ ",username,host_name,current_directory);
     input = read_input();
     char * cur_input = input;
     strsep(&input,";");
@@ -143,9 +149,15 @@ int main(){
             printf("cd: %s: No such file or directory\n",args[1]);
           }
         }
+        //User puts in more than one arg
         else {
           printf("cd: Too many arguments\n");
         }
+        //Change directory that is displayed
+        change_directory_display(current_directory);
+      }
+      else if (strcmp(args[0],"exit") == 0){
+        exit(0);
       }
       else{
         status = execute_args(args);
