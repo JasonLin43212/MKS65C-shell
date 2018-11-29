@@ -116,40 +116,27 @@ void print_2d(char *** arr){
   printf("]\n");
 }
 
-int has_special(char ** args, char ** first_args,
-                char ** special, char ** second_args ){
+int has_special(char ** args, char *** output){
   char * match = "<<>>|";
-  int arg_num = 0;
+  int output_index = 0;
   int inner_index = 0;
   int return_val = 0;
-  while (*args){
+  while (args){
     if (strstr(match,*args)){
-      *special = *args;
+      output_index++;
+      output[output_index][0] = *args;
+      output_index++;
       inner_index = 0;
-      arg_num++;
+      args++;
       return_val = 1;
     }
     else {
-      if (arg_num){
-        second_args[inner_index] = *args;
-      }
-      else {
-        first_args[inner_index] = *args;
-      }
+      output[output_index][inner_index] = *args;
       inner_index++;
+      args++;
     }
-    args++;
   }
   return return_val;
-}
-
-int get_num_args(char ** args){
-  int output = 0;
-  while(*args){
-    output++;
-    args++;
-  }
-  return output;
 }
 
 int execute_args(char ** args){
@@ -160,14 +147,15 @@ int execute_args(char ** args){
   execute different functions
 }
 */
-  int num_args = get_num_args(args);
-  char * first_arg[num_args];
-  char * special;
-  char * second_arg[num_args];
+  char ** split[3];
 
-  if (has_special(args,first_arg,&special,second_arg)){
-    printf("has args\n");
+  print_2d(split);
+  /*
+  if (has_special(args,split)){
+    printf("has args");
+    print_2d(split);
   }
+  */
   int child_pid = fork();
   if (child_pid == -1){
     printf("Failed to fork child.\n");
