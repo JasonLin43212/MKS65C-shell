@@ -17,9 +17,4 @@ void print_list(char **);
 */
 char * read_input();
 
-/*
-  execute_args takes in a list of arguments and executes it by
-  first forking to create a child process and then using
-  execvp to execute that command in the child process
-*/
-int execute_args(char **);
+void change_directory_display(char []);

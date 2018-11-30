@@ -10,6 +10,9 @@
 #include <pwd.h>
 
 #include "shell.h"
+#include "execute.h"
+#include "parse.h"
+
 
 void check_error() {
   if (errno) {
@@ -52,143 +55,6 @@ char * read_input(){
   }
 }
 
-
-int sep_special(char ** old, char *** output, char * special, int * arg_index){
-  if (strstr(*old,special)){
-    char * super_old = *old;
-    strsep(&(*old),special);
-    if (*super_old){
-      (*output)[*arg_index] = super_old;
-      (*arg_index)++;
-    }
-    (*output)[*arg_index] = special;
-    (*arg_index)++;
-    printf("special: %s, %s\n",special,*old);
-    *old += strlen(special)-1;
-    if (**old){
-      (*output)[*arg_index] = *old;
-      (*arg_index)++;
-      *old += strlen(*old);
-    }
-    return 1;
-  }
-  return 0;
-}
-
-char ** parse_args(char * line){
-  //Remove whitespace in front of input
-  while(*line == ' ' || *line == '\t'){
-    line++;
-  }
-  char ** output = malloc(10*sizeof(char *));
-  int arg_index = 0;
-  char * old = NULL;
-
-  while(line){
-    old = line;
-    strsep(&line," ");
-    int num_special = 0;
-    //Checks for redirects
-    num_special += sep_special(&old,&output,">>",&arg_index);
-    num_special += sep_special(&old,&output,"<<",&arg_index);
-    num_special += sep_special(&old,&output,">",&arg_index);
-    num_special += sep_special(&old,&output,"<",&arg_index);
-    num_special += sep_special(&old,&output,"|",&arg_index);
-    if (num_special < 1 && *old){
-      output[arg_index] = old;
-      arg_index++;
-    }
-  }
-  output[arg_index] = NULL;
-
-  return output;
-}
-
-void print_2d(char *** arr){
-  while(*arr){
-    printf("[");
-    while(**arr){
-      printf("%s,",**arr);
-      (*arr)++;
-    }
-    arr++;
-  }
-  printf("]\n");
-}
-
-int has_special(char ** args, char ** first_args,
-                char ** special, char ** second_args ){
-  char * match = "<<>>|";
-  int arg_num = 0;
-  int inner_index = 0;
-  int return_val = 0;
-  while (*args){
-    if (strstr(match,*args)){
-      *special = *args;
-      inner_index = 0;
-      arg_num++;
-      return_val = 1;
-    }
-    else {
-      if (arg_num){
-        second_args[inner_index] = *args;
-      }
-      else {
-        first_args[inner_index] = *args;
-      }
-      inner_index++;
-    }
-    args++;
-  }
-  return return_val;
-}
-
-int get_num_args(char ** args){
-  int output = 0;
-  while(*args){
-    output++;
-    args++;
-  }
-  return output;
-}
-
-int execute_args(char ** args){
-  /*if (has special symbol while creating a 2d array of both the array and the symbol by giving it inside,){
-  then pass the 2d array into a special function that handles it case by case
-  OR
-  use switch statement to look at the 2nd element and based on that
-  execute different functions
-}
-*/
-  int num_args = get_num_args(args);
-  char * first_arg[num_args];
-  char * special;
-  char * second_arg[num_args];
-
-  if (has_special(args,first_arg,&special,second_arg)){
-    printf("has args\n");
-  }
-  int child_pid = fork();
-  if (child_pid == -1){
-    printf("Failed to fork child.\n");
-    exit(1);
-  }
-
-  //Parent
-  if (child_pid){
-    int status = 0;
-    wait(&status);
-  }
-  //Command
-  else {
-    execvp(args[0],args);
-    if (errno == 2) {
-      printf("Cannot find command: %s\n",args[0]);
-    }
-  }
-  return 1;
-}
-
 void change_directory_display(char output[]){
   char path[4096] = "";
   if (getcwd(path,4096) == NULL){
@@ -225,10 +91,11 @@ int main(){
     while (cur_input){
       //printf("Your input now is cur:%s or input:%s\n",cur_input,input);
       args = parse_args(cur_input);
-      print_list(args);
 
+      // User enters nothing
+      if (get_num_args(args) == 0){}
       //Checks if the user is trying to change directory
-      if (strcmp(args[0],"cd") == 0){
+      else if (strcmp(args[0],"cd") == 0){
         //User has no args or "~"
         if (args[1] == NULL || strcmp(args[1],"~") == 0){
           char * home = getenv("HOME");
@@ -257,6 +124,8 @@ int main(){
       else{
         status = execute_args(args);
       }
+
+      //Go to the command after the next semicolon
       cur_input = input;
       strsep(&input,";");
     }
