@@ -63,9 +63,8 @@ void run_command(char ** args){
   //Command
   else {
     execvp(args[0],args);
-    if (errno == 2) {
-      printf("Cannot find command: %s\n",args[0]);
-    }
+    printf("Cannot find command: %s\n",args[0]);
+    exit(2);
   }
 }
 
@@ -95,6 +94,7 @@ void execute_special(char ** first, char * special, char ** second){
     dup2(fd,0);
     run_command(first);
     dup2(copy,0);
+    close(fd);
   }
   else if (strcmp(special,"<<") == 0){
 
@@ -103,44 +103,49 @@ void execute_special(char ** first, char * special, char ** second){
     int pipe_fd[2];
     // 0: Read, 1: Write
     pipe(pipe_fd);
-    int in_copy = dup(0);
-    int out_copy = dup(1);
-    // Puts write pipe in stdout
-    dup2(pipe_fd[1],1);
-    // Puts read pipe in stdin
-    dup2(pipe_fd[0],0);
+    int in = dup(0);
+    int out = dup(1);
 
-    int f = fork();
+    int child_pid = fork();
 
-    //Parent
-    if (f){
-      //Close the read pipe
+    // First Child
+    if (child_pid == 0){
+      dup2(pipe_fd[1],1);
       close(pipe_fd[0]);
-
-      execvp(first[0],first);
-    }
-    //Child
-    else {
-      //Close write pipe
       close(pipe_fd[1]);
-
-      //read from stdin
-      //execute command with addition by making new array?
-      //check < functionality again??? its confusing how you dont need to make a new array for execvp
+      execvp(first[0],first);
+      if (errno == 2){
+        printf("Cannot find command: %s\n",first[0]);
+        exit(2);
+      }
     }
+    // Parent
+    else {
+      child_pid = fork();
 
-  }
-  /*
-  else if (strcmp(special,">") == 0){
+      // Second child
+      if (child_pid == 0){
+        dup2(pipe_fd[0],0);
+        close(pipe_fd[1]);
+        close(pipe_fd[0]);
+        execvp(second[0],second);
+        if (errno == 2){
+          printf("Cannot find command: %s\n",first[0]);
+          exit(2);
+        }
+      }
+      //Parent
+      else {
+        int status = 0;
+        close(pipe_fd[0]);
+        close(pipe_fd[1]);
+        wait(&status);
 
+      }
+    }
+    dup2(in,0);
+    dup2(out,1);
   }
-  else if (strcmp(special,">") == 0){
-
-  }
-  else if (strcmp(special,">") == 0){
-
-  }
-  */
 }
 
 
