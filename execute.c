@@ -110,41 +110,42 @@ void execute_special(char ** first, char * special, char ** second){
 
     // First Child
     if (child_pid == 0){
-      dup2(pipe_fd[1],1);
-      close(pipe_fd[0]);
-      close(pipe_fd[1]);
-      execvp(first[0],first);
-      if (errno == 2){
-        printf("Cannot find command: %s\n",first[0]);
-        exit(2);
-      }
-    }
-    // Parent
-    else {
       child_pid = fork();
 
       // Second child
       if (child_pid == 0){
-        dup2(pipe_fd[0],0);
+        printf("hi i am second child");
+        dup2(pipe_fd[1],1);
         close(pipe_fd[1]);
         close(pipe_fd[0]);
+        execvp(first[0],first);
+        if (errno == 2){
+          printf("Cannot find command: %s\n",first[0]);
+          exit(2);
+        }
+      }
+      //First child
+      else{
+        dup2(pipe_fd[0],0);
+        close(pipe_fd[0]);
+        close(pipe_fd[1]);
         execvp(second[0],second);
         if (errno == 2){
           printf("Cannot find command: %s\n",first[0]);
           exit(2);
         }
       }
-      //Parent
-      else {
-        int status = 0;
-        close(pipe_fd[0]);
-        close(pipe_fd[1]);
-        wait(&status);
-
-      }
     }
-    dup2(in,0);
-    dup2(out,1);
+    // Parent
+    else {
+      int status = 0;
+      close(pipe_fd[0]);
+      close(pipe_fd[1]);
+      wait(&status);
+      dup2(in,0);
+      dup2(out,1);
+    }
+
   }
 }
 
