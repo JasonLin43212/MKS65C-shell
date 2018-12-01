@@ -48,7 +48,7 @@ int has_special(char ** args, char ** first_args,
   return return_val;
 }
 
-void run_command(char ** args){
+int run_command(char ** args){
   int child_pid = fork();
   if (child_pid == -1){
     printf("Failed to fork child.\n");
@@ -59,12 +59,12 @@ void run_command(char ** args){
   if (child_pid){
     int status = 0;
     wait(&status);
+    return status;
   }
-  //Command
+  //Child
   else {
     execvp(args[0],args);
-    printf("Cannot find command: %s\n",args[0]);
-    exit(2);
+    return errno;
   }
 }
 
@@ -72,10 +72,13 @@ void execute_special(char ** first, char * special, char ** second){
   // Overwrite into file
   if (strcmp(special,">") == 0){
     int copy = dup(1);
-    int fd = open(second[0], O_WRONLY | O_CREAT, 0666);
+    int fd = open(second[0], O_WRONLY | O_TRUNC | O_CREAT, 0666);
     dup2(fd,1);
-    run_command(first);
+    int status = run_command(first);
     dup2(copy,1);
+    if (status){
+      printf("Cannot find command: %s\n",first[0]);
+    }
     close(fd);
   }
   // Append into file
@@ -83,8 +86,11 @@ void execute_special(char ** first, char * special, char ** second){
     int copy = dup(1);
     int fd = open(second[0], O_WRONLY | O_APPEND | O_CREAT, 0666);
     dup2(fd,1);
-    run_command(first);
+    int status = run_command(first);
     dup2(copy,1);
+    if (status){
+      printf("Cannot find command: %s\n",first[0]);
+    }
     close(fd);
   }
   // Put file contents into stdin
@@ -92,12 +98,12 @@ void execute_special(char ** first, char * special, char ** second){
     int copy = dup(0);
     int fd = open(second[0], O_RDONLY);
     dup2(fd,0);
-    run_command(first);
+    int status = run_command(first);
     dup2(copy,0);
+    if (status){
+      printf("Cannot find command: %s\n",first[0]);
+    }
     close(fd);
-  }
-  else if (strcmp(special,"<<") == 0){
-
   }
   else if (strcmp(special,"|") == 0){
     int pipe_fd[2];
@@ -119,10 +125,9 @@ void execute_special(char ** first, char * special, char ** second){
         close(pipe_fd[1]);
         close(pipe_fd[0]);
         execvp(first[0],first);
-        if (errno == 2){
-          printf("Cannot find command: %s\n",first[0]);
-          exit(2);
-        }
+        printf("Cannot find command: %s\n",first[0]);
+        exit(2);
+
       }
       //First child
       else{
@@ -130,10 +135,8 @@ void execute_special(char ** first, char * special, char ** second){
         close(pipe_fd[0]);
         close(pipe_fd[1]);
         execvp(second[0],second);
-        if (errno == 2){
-          printf("Cannot find command: %s\n",first[0]);
-          exit(2);
-        }
+        printf("Cannot find command: %s\n",second[0]);
+        exit(2);
       }
     }
     // Parent
@@ -162,8 +165,15 @@ int execute_args(char ** args){
   }
   //Normal Command without redirection or piping
   else {
-    run_command(args);
+    int status = run_command(args);
+    if (status){
+      if (status == 2){
+        printf("Cannot find command: %s\n",args[0]);
+      }
+      else if (status != 256 && status != 512) {
+        printf("%d: %s\n",status,strerror(status));
+      }
+    }
   }
-
   return 1;
 }

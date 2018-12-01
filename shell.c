@@ -117,6 +117,7 @@ int main(){
 
       //Exit
       else if (strcmp(args[0],"exit") == 0){
+        printf("Shell Exited\n");
         exit(0);
       }
 
