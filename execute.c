@@ -12,6 +12,19 @@
 #include "execute.h"
 #include "shell.h"
 
+void print_execute_error(int status, char * cmd_name){
+  if (status){
+    if (status == 2){
+      printf("Cannot find command: %s\n",cmd_name);
+      exit(2);
+    }
+    else if (status != 256 && status != 512) {
+      printf("%d: %s\n",status,strerror(status));
+      exit(2);
+    }
+  }
+}
+
 int get_num_args(char ** args){
   int output = 0;
   while(*args){
@@ -68,42 +81,48 @@ int run_command(char ** args){
   }
 }
 
-void execute_special(char ** first, char * special, char ** second){
+int execute_special(char ** first, char * special, char ** second){
   // Overwrite into file
   if (strcmp(special,">") == 0){
-    int copy = dup(1);
     int fd = open(second[0], O_WRONLY | O_TRUNC | O_CREAT, 0666);
+    if (fd == -1){
+      printf("Cannot find file or directory: %s\n",second[0]);
+      return 0;
+    }
+    int copy = dup(1);
     dup2(fd,1);
     int status = run_command(first);
     dup2(copy,1);
-    if (status){
-      printf("Cannot find command: %s\n",first[0]);
-    }
     close(fd);
+    return status;
   }
   // Append into file
   else if (strcmp(special,">>") == 0){
-    int copy = dup(1);
     int fd = open(second[0], O_WRONLY | O_APPEND | O_CREAT, 0666);
+    if (fd == -1){
+      printf("Cannot find file or directory: %s\n",second[0]);
+      return 0;
+    }
+    int copy = dup(1);
     dup2(fd,1);
     int status = run_command(first);
     dup2(copy,1);
-    if (status){
-      printf("Cannot find command: %s\n",first[0]);
-    }
     close(fd);
+    return status;
   }
   // Put file contents into stdin
   else if (strcmp(special,"<") == 0){
-    int copy = dup(0);
     int fd = open(second[0], O_RDONLY);
+    if (fd == -1){
+      printf("Cannot find file or directory: %s\n",second[0]);
+      return 0;
+    }
+    int copy = dup(0);
     dup2(fd,0);
     int status = run_command(first);
     dup2(copy,0);
-    if (status){
-      printf("Cannot find command: %s\n",first[0]);
-    }
     close(fd);
+    return status;
   }
   else if (strcmp(special,"|") == 0){
     int pipe_fd[2];
@@ -120,23 +139,20 @@ void execute_special(char ** first, char * special, char ** second){
 
       // Second child
       if (child_pid == 0){
-        printf("hi i am second child");
         dup2(pipe_fd[1],1);
         close(pipe_fd[1]);
         close(pipe_fd[0]);
         execvp(first[0],first);
-        printf("Cannot find command: %s\n",first[0]);
-        exit(2);
-
+        return errno;
       }
       //First child
       else{
+        wait(NULL);
         dup2(pipe_fd[0],0);
         close(pipe_fd[0]);
         close(pipe_fd[1]);
         execvp(second[0],second);
-        printf("Cannot find command: %s\n",second[0]);
-        exit(2);
+        return errno*-1;
       }
     }
     // Parent
@@ -150,6 +166,7 @@ void execute_special(char ** first, char * special, char ** second){
     }
 
   }
+  return 0;
 }
 
 
@@ -161,19 +178,19 @@ int execute_args(char ** args){
 
   // If the command has redirection or piping
   if (has_special(args,first_arg,&special,second_arg)){
-    execute_special(first_arg,special,second_arg);
+    int status = execute_special(first_arg,special,second_arg);
+    if (status < 0){
+      print_execute_error(-1*status,second_arg[0]);
+    }
+    else if (status > 0){
+      print_execute_error(status,first_arg[0]);
+    }
+
   }
   //Normal Command without redirection or piping
   else {
     int status = run_command(args);
-    if (status){
-      if (status == 2){
-        printf("Cannot find command: %s\n",args[0]);
-      }
-      else if (status != 256 && status != 512) {
-        printf("%d: %s\n",status,strerror(status));
-      }
-    }
+    print_execute_error(status,args[0]);
   }
   return 1;
 }

@@ -1,0 +1,33 @@
+ls -al --color
+echo creating directory directo...
+mkdir directo
+ls -al --color
+echo cding into directo...
+cd directo
+ls -al --color
+echo creating file "afile.txt"...
+touch afile.txt
+ls -al --color
+echo redirecting ls -al into "afile.txt"...
+ls -al > afile.txt
+echo catting afile.txt
+cat afile.txt
+echo appending "what is up my peopels" into afile.txt...
+echo "what is up my peoples" >> afile.txt
+echo catting afile.txt...
+cat afile.txt
+echo removing afile.txt...
+rm afile.txt
+ls -al --color
+echo creating bfile.txt and cfile.txt
+touch bfile.txt
+touch cfile.txt
+ls | wc
+echo going out of directo
+cd ..
+ls
+echo removing directo...
+rm -rf directo
+echo "showing tht directo was removed"...
+ls -al --color
+exit
