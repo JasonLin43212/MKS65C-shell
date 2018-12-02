@@ -9,15 +9,22 @@
 #include <time.h>
 #include <pwd.h>
 
-#include "execute.h"
 #include "shell.h"
 
+/*
+  Arguments: The print_execute_error takes in an integer that represents the status
+  (errno) and a string of the command name
+  Return Values: No return value
+  Purpose: To print out error messages if the command is not found or the errno messages
+  based on the status
+ */
 void print_execute_error(int status, char * cmd_name){
   if (status){
     if (status == 2){
       printf("Cannot find command: %s\n",cmd_name);
       exit(2);
     }
+    //Some commands give errno 256 or 512 which are unknown
     else if (status != 256 && status != 512) {
       printf("%d: %s\n",status,strerror(status));
       exit(2);
@@ -25,6 +32,11 @@ void print_execute_error(int status, char * cmd_name){
   }
 }
 
+/*
+  Arguments: The function get_num_args takes in a string array
+  Return Values: Returns the number of elements in that array
+  Purpose: To count the number of args in the input
+ */
 int get_num_args(char ** args){
   int output = 0;
   while(*args){
@@ -34,6 +46,16 @@ int get_num_args(char ** args){
   return output;
 }
 
+/*
+  Arguments: The function has_special takes in an array of args (strings), an array for
+  storing the args of the first command, a pointer to a string that stores the special
+  character, and an array for storing the args of the second command/part
+  Return Values: Returns 0 if there is no special characters and 1 if there is
+  Purpose: (1) To know if there are special characters in the arguments
+  (2) To separate the arguments into an array with only the args necessary for the
+  first command, a string to know which special character (ie >,>>,<,|) was in the
+  command, and an array with args necessary for the second command/part
+ */
 int has_special(char ** args, char ** first_args,
                 char ** special, char ** second_args ){
   char * match = "<<>>|";
@@ -41,6 +63,7 @@ int has_special(char ** args, char ** first_args,
   int inner_index = 0;
   int return_val = 0;
   while (*args){
+    // Checks if the arg is any of the special characters
     if (strstr(match,*args)){
       *special = *args;
       inner_index = 0;
@@ -61,6 +84,12 @@ int has_special(char ** args, char ** first_args,
   return return_val;
 }
 
+/*
+  Arguments: The function run_command takes in a string array (char **) of the arguments
+  Return Values: Returns the errno after executing the command
+  Purpose: To use the arguments to run the command, but if the command fails, it will
+  return the errno for processing by the print_execute_error function.
+ */
 int run_command(char ** args){
   int child_pid = fork();
   if (child_pid == -1){
@@ -81,6 +110,13 @@ int run_command(char ** args){
   }
 }
 
+/*
+  Arguments: The execute_special command takes in an array of args for the first command,
+  the string of the special character, and the array of args for the second command.
+  Return Value: Returns the errno after execution
+  Purpose: To handle the different cases of special characters (>,>>,<,|) and to return
+  the appropriate errno if an error occurs.
+ */
 int execute_special(char ** first, char * special, char ** second){
   // Overwrite into file
   if (strcmp(special,">") == 0){
@@ -169,14 +205,20 @@ int execute_special(char ** first, char * special, char ** second){
   return 0;
 }
 
-
+/*
+  Arguments: The function execute_args takes in an array of strings (char **)
+  Return Values: Returns 1
+  Purpose: Given an array of args, it executes it. The two cases are if it has
+  special characters or if it doesn't. It also handles the cases where the commands
+  do not exist and prints the appropriate error messages.
+ */
 int execute_args(char ** args){
   int num_args = get_num_args(args);
   char ** first_arg = malloc(num_args*sizeof(char *));
   char * special;
   char ** second_arg = malloc(num_args*sizeof(char *));
 
-  // If the command has redirection or piping
+  // Checks if the args contain special characters
   if (has_special(args,first_arg,&special,second_arg)){
     int status = execute_special(first_arg,special,second_arg);
     if (status < 0){
