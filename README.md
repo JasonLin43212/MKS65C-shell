@@ -17,6 +17,7 @@ By Jason Lin, Period 10
 * If there is a file with a list of commands and the contents of this file are redirected to the stdin of `./a.out`, then the correct output will print but there will be a big block of the username, hostname and current working directory.
 * When piping, if you enter a command that does not exist in the first part of the pipe, it will pipe the error message to the second part of the pipe. For example, `ridfjjfd | wc` will actually return a valid response because it is using `wc` on the error message saying that ridfjjfd is not found.
 * When using `wc < file.txt`, the spacing of the output is changed compared to if one were to do use `wc file.txt` 
+* The `grep` function doesn't seem to work at all
 ## Every Function Header
 ```C
 void print_list(char **);
