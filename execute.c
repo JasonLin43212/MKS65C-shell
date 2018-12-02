@@ -22,12 +22,12 @@ void print_execute_error(int status, char * cmd_name){
   if (status){
     if (status == 2){
       printf("Cannot find command: %s\n",cmd_name);
-      exit(2);
+      exit(1);
     }
     //Some commands give errno 256 or 512 which are unknown
     else if (status != 256 && status != 512) {
       printf("%d: %s\n",status,strerror(status));
-      exit(2);
+      exit(1);
     }
   }
 }
