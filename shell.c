@@ -110,7 +110,7 @@ int main(){
   change_directory_display(current_directory);
 
   while(status){
-    printf("%s@%s:%s$ ",username,host_name,current_directory);
+    //printf("%s@%s:%s$ ",username,host_name,current_directory);
     input = read_input();
     char * cur_input = input;
     strsep(&input,";");
@@ -149,7 +149,7 @@ int main(){
 
       //Exit
       else if (strcmp(args[0],"exit") == 0){
-        printf("Shell Exited\n");
+        //printf("Shell Exited\n");
         exit(0);
       }
 
