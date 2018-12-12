@@ -110,8 +110,10 @@ int main(){
   change_directory_display(current_directory);
 
   while(status){
-    //printf("%s@%s:%s$ ",username,host_name,current_directory);
-    printf("$ ");
+    if (isatty(0)){
+      printf("%s@%s:%s$ ",username,host_name,current_directory);
+    }
+    //printf("$ ");
     input = read_input();
     char * cur_input = input;
     strsep(&input,";");
